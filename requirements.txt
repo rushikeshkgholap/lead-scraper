@@ -2,3 +2,4 @@ streamlit
 undetected-chromedriver
 selenium
 geopy
+packaging
