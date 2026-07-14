@@ -1,3 +1,29 @@
+import os
+import shutil
+import sys
+import types
+
+# --- compatibility shim: newer Python (3.12+) removed 'distutils',
+# but undetected_chromedriver still imports from it. This fakes the
+# piece it needs (LooseVersion) using the 'packaging' library instead. ---
+if 'distutils' not in sys.modules:
+    try:
+        import distutils  # noqa: F401
+    except ImportError:
+        from packaging.version import Version as _Version
+
+        class LooseVersion(_Version):
+            def __init__(self, vstring):
+                cleaned = str(vstring).split('-')[0]
+                super().__init__(cleaned)
+
+        distutils_module = types.ModuleType('distutils')
+        version_module = types.ModuleType('distutils.version')
+        version_module.LooseVersion = LooseVersion
+        distutils_module.version = version_module
+        sys.modules['distutils'] = distutils_module
+        sys.modules['distutils.version'] = version_module
+
 import streamlit as st
 import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
@@ -179,7 +205,6 @@ def save_leads_csv(results, filename):
 # ---------------- STREAMLIT UI ----------------
 
 st.title("🩺 Local Business Lead Generator")
-st.caption("Google Maps se un doctors/clinics ki list nikalo jinki website nahi hai")
 
 with st.form("lead_form"):
     keyword = st.text_input("Keyword", placeholder="e.g. general physician, dentist, BDS")
@@ -202,12 +227,17 @@ if submitted:
     st.success(f"Area mila: {matched_address}")
     st.info("Scraping shuru ho rahi hai (background me, headless mode) — kabhi kabhi Google CAPTCHA de sakta hai jo cloud pe solve nahi ho payega, aisa ho to thodi der baad dubara try karna.")
 
+    CHROMEDRIVER_PATH = "/tmp/chromedriver"
+    if not os.path.exists(CHROMEDRIVER_PATH):
+        shutil.copy("/usr/bin/chromedriver", CHROMEDRIVER_PATH)
+        os.chmod(CHROMEDRIVER_PATH, 0o755)
+
     options = uc.ChromeOptions()
     options.add_argument('--headless=new')
     options.add_argument('--no-sandbox')
     options.add_argument('--disable-dev-shm-usage')
     options.binary_location = "/usr/bin/chromium"
-    driver = uc.Chrome(options=options, driver_executable_path="/usr/bin/chromedriver")
+    driver = uc.Chrome(options=options, driver_executable_path=CHROMEDRIVER_PATH)
 
     try:
         # Phase 1: grid search
