@@ -247,7 +247,7 @@ if submitted:
 
         def grid_progress_cb(done, total, found_so_far):
             grid_progress.progress(done / total)
-            grid_status.text(f"Grid point {done}/{total} — abhi tak {found_so_far} unique listings")
+            grid_status.text(f"Grid point {done}/{total} — {found_so_far} unique listings")
 
         all_cards = collect_all_leads(driver, keyword, lat, lng, radius_km, spacing_km=1.5, progress_cb=grid_progress_cb)
 
