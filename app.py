@@ -204,7 +204,7 @@ def save_leads_csv(results, filename):
 
 # ---------------- STREAMLIT UI ----------------
 
-st.title("🩺 Local Business Lead Generator")
+st.title("Lead Generator")
 
 with st.form("lead_form"):
     keyword = st.text_input("Keyword", placeholder="e.g. general physician, dentist, BDS")
@@ -214,18 +214,18 @@ with st.form("lead_form"):
 
 if submitted:
     if not keyword or not area_name:
-        st.error("Keyword aur Area dono daalo")
+        st.error("Place Keyword")
         st.stop()
 
-    with st.spinner("Area dhoondh rahe hai..."):
+    with st.spinner("Area Finding..."):
         lat, lng, matched_address = get_lat_lng(area_name)
 
     if lat is None:
-        st.error("Area nahi mila. Zyada specific naam try karo (e.g. 'Kothrud, Pune, Maharashtra')")
+        st.error("Area not Found (e.g. 'Kothrud, Pune, Maharashtra')")
         st.stop()
 
-    st.success(f"Area mila: {matched_address}")
-    st.info("Scraping shuru ho rahi hai (background me, headless mode) — kabhi kabhi Google CAPTCHA de sakta hai jo cloud pe solve nahi ho payega, aisa ho to thodi der baad dubara try karna.")
+    st.success(f"Area Found: {matched_address}")
+    st.info("Scraping Strat ")
 
     CHROMEDRIVER_PATH = "/tmp/chromedriver"
     if not os.path.exists(CHROMEDRIVER_PATH):
@@ -241,7 +241,7 @@ if submitted:
 
     try:
         # Phase 1: grid search
-        st.subheader("Phase 1: Area scan ho raha hai")
+        st.subheader("Phase 1: Area scaning...")
         grid_progress = st.progress(0)
         grid_status = st.empty()
 
@@ -251,10 +251,10 @@ if submitted:
 
         all_cards = collect_all_leads(driver, keyword, lat, lng, radius_km, spacing_km=1.5, progress_cb=grid_progress_cb)
 
-        st.success(f"Total unique listings mile: {len(all_cards)}")
+        st.success(f"Total unique listings : {len(all_cards)}")
 
         # Phase 2: detail fetch for no-website listings
-        st.subheader("Phase 2: No-website leads ki detail nikal rahe hai")
+        st.subheader("Phase 2: No-website detail ")
         detail_progress = st.progress(0)
         detail_status = st.empty()
 
@@ -263,14 +263,14 @@ if submitted:
         def detail_progress_cb(done, total):
             if total > 0:
                 detail_progress.progress(done / total)
-            detail_status.text(f"{done}/{total} no-website leads process ho gaye")
+            detail_status.text(f"{done}/{total} no-website leads process done")
 
         results = build_leads_dataset(driver, all_cards, progress_cb=detail_progress_cb)
 
         filename = f"{area_name.replace(' ', '_').replace(',', '')}_{keyword.replace(' ', '_')}_leads.csv"
         save_leads_csv(results, filename)
 
-        st.success(f"✅ Done! {len(results)} leads mile (jinki website nahi hai)")
+        st.success(f"✅ Done! {len(results)} leads Found")
 
         st.dataframe(results)
 
